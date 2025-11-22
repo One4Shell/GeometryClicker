@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NEON CORE: Operator Terminal</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #bc13fe;
+            --neon-gold: #ffd700;
+            --neon-green: #0aff0a;
+            --bg-dark: #050510;
+            --glass-border: rgba(0, 243, 255, 0.3);
+            --glass-bg: rgba(10, 16, 30, 0.85);
+        }
+        
+        * { -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #fff;
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 2px; }
+
+        /* UI Components */
+        .glass-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+        }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            transition: opacity 0.3s;
+        }
+
+        .skill-btn {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
+        }
+        .skill-btn:active:not(:disabled) { transform: scale(0.95); }
+        .skill-btn:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+        
+        .scanline {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.2;
+        }
+
+        /* Animations */
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.8); opacity: 1; }
+            100% { transform: translateY(-80px) scale(1.2); opacity: 0; }
+        }
+        .floating-text {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            font-weight: bold;
+            text-shadow: 0 0 5px currentColor;
+            z-index: 100;
+        }
+
+        /* CRT Pulse */
+        @keyframes pulseBorder {
+            0% { box-shadow: inset 0 0 20px rgba(0,243,255,0.1); }
+            50% { box-shadow: inset 0 0 40px rgba(0,243,255,0.2); }
+            100% { box-shadow: inset 0 0 20px rgba(0,243,255,0.1); }
+        }
+        .crt-border { animation: pulseBorder 4s infinite; }
+
+        /* Stat Grid */
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 2px solid var(--neon-blue);
+        }
+        .stat-card:hover { background: rgba(0, 243, 255, 0.1); }
+
+        .hidden-modal { opacity: 0; pointer-events: none; }
+        .visible-modal { opacity: 1; pointer-events: auto; }
+
+        .transmission-card {
+            background: rgba(10, 20, 40, 0.95);
+            border: 2px solid var(--neon-green);
+            box-shadow: 0 0 30px rgba(10, 255, 10, 0.2);
+        }
+    </style>
+</head>
+<body class="h-[100dvh] w-screen flex flex-col overflow-hidden bg-black crt-border">
+
+    <div class="scanline absolute inset-0"></div>
+
+    <!-- HEADER -->
+    <header class="flex-none h-16 border-b border-cyan-900/50 bg-black/90 backdrop-blur-md z-30 flex items-center justify-between px-4 relative">
+        <!-- Player Info -->
+        <div class="flex items-center gap-3 cursor-pointer group" onclick="uiManager.editNickname()">
+            <div class="w-10 h-10 rounded border border-cyan-500 bg-cyan-900/20 flex items-center justify-center text-cyan-400 text-lg">
+                <i class="fa-solid fa-user-astronaut"></i>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-[10px] text-gray-400 uppercase tracking-widest leading-none mb-1">OPERATOR</span>
+                <div class="flex items-center gap-2">
+                    <span id="player-name" class="text-lg font-bold orbitron text-white group-hover:text-cyan-300 transition-colors">UNKNOWN</span>
+                    <i class="fa-solid fa-pen text-[10px] text-gray-600 group-hover:text-cyan-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Stats -->
+        <div class="flex flex-col items-end mr-4">
+            <span class="text-[10px] text-cyan-600 uppercase tracking-widest mb-1">CREDITS</span>
+            <span id="credits-display" class="text-xl md:text-2xl font-bold orbitron text-white drop-shadow-[0_0_5px_rgba(0,243,255,0.8)]">0</span>
+        </div>
+
+        <!-- Dashboard Toggle -->
+        <button onclick="uiManager.toggleDashboard()" class="w-10 h-10 border border-purple-500/50 rounded bg-purple-900/20 text-purple-400 hover:bg-purple-900/50 transition-colors flex items-center justify-center">
+            <i class="fa-solid fa-chart-simple"></i>
+        </button>
+
+        <div id="save-indicator" class="absolute bottom-0 right-0 p-1 text-[9px] text-green-500 opacity-0 transition-opacity duration-500 bg-black/80 rounded-tl">DATA SYNCED</div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative z-10">
+        
+        <!-- VIEWPORT 3D (Top Mobile / Right Desktop) -->
+        <section class="relative flex-1 order-1 md:order-2 min-h-[45vh] bg-gradient-to-b from-black via-[#050515] to-[#0a0a20]" id="scene-container">
+            
+            <!-- Boss HUD -->
+            <div class="absolute top-4 left-0 right-0 flex flex-col items-center pointer-events-none z-10 px-4">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs text-gray-500">TARGET:</span>
+                    <span id="boss-name" class="text-lg orbitron font-bold text-cyan-300 tracking-widest">LOADING...</span>
+                    <span class="text-xs bg-red-900/30 border border-red-500/30 text-red-400 px-1 rounded">LVL <span id="level-badge">1</span></span>
+                </div>
+                <div class="w-full max-w-md h-2 bg-gray-900 border border-gray-700 rounded-full overflow-hidden">
+                    <div id="hp-bar" class="h-full bg-gradient-to-r from-cyan-600 via-cyan-400 to-white w-full transition-all duration-100"></div>
+                </div>
+                <span id="boss-hp-text" class="mt-1 font-mono text-[10px] text-cyan-500/80">10 / 10</span>
+            </div>
+
+            <!-- Floating Skills -->
+            <div class="absolute bottom-6 left-0 right-0 flex justify-center gap-4 z-20 pointer-events-none">
+                <button id="skill-1" class="skill-btn w-14 h-14 rounded-xl pointer-events-auto flex flex-col items-center justify-center group relative overflow-hidden" onclick="gameLogic.activateSkill('overclock')">
+                    <div class="cooldown-overlay absolute bottom-0 left-0 right-0 bg-cyan-500/40 z-0" id="cd-1" style="height: 0%"></div>
+                    <i class="fa-solid fa-bolt text-xl z-10 text-cyan-200"></i>
+                    <span class="text-[9px] z-10 font-bold mt-1 text-cyan-100">BOOST</span>
+                </button>
+                <button id="skill-2" class="skill-btn w-14 h-14 rounded-xl pointer-events-auto flex flex-col items-center justify-center group relative overflow-hidden" onclick="gameLogic.activateSkill('nanoswarm')">
+                    <div class="cooldown-overlay absolute bottom-0 left-0 right-0 bg-purple-500/40 z-0" id="cd-2" style="height: 0%"></div>
+                    <i class="fa-solid fa-locust text-xl z-10 text-purple-200"></i>
+                    <span class="text-[9px] z-10 font-bold mt-1 text-purple-100">SWARM</span>
+                </button>
+            </div>
+
+            <!-- 3D Canvas Location -->
+            <div id="click-layer" class="absolute inset-0 z-10" style="touch-action: manipulation;"></div>
+        </section>
+
+        <!-- UPGRADES (Bottom Mobile / Left Desktop) -->
+        <aside class="glass-panel flex flex-col order-2 md:order-1 h-[55vh] md:h-auto md:w-[400px] z-20 border-t md:border-t-0 md:border-r border-cyan-900/50">
+            <div class="p-3 border-b border-white/5 flex justify-between items-center bg-black/40">
+                <h2 class="text-cyan-400 orbitron tracking-widest text-sm font-bold"><i class="fa-solid fa-microchip mr-2"></i>SYSTEM UPGRADES</h2>
+                <div class="text-[10px] text-gray-400 space-x-2">
+                    <span>DPS: <span id="dps-display" class="text-purple-400 font-bold">0.0</span></span>
+                    <span>CLICK: <span id="click-display" class="text-green-400 font-bold">1</span></span>
+                </div>
+            </div>
+            <div id="upgrade-list" class="flex-1 overflow-y-auto p-2 space-y-2 pb-8 custom-scrollbar">
+                <!-- Injected via JS -->
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- DASHBOARD OVERLAY (Hidden by default) -->
+    <div id="dashboard-overlay" class="fixed inset-0 z-50 flex items-center justify-center hidden-modal modal-overlay p-4 transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-2xl max-h-[90vh] flex flex-col rounded-lg border border-cyan-500/50 shadow-[0_0_50px_rgba(0,243,255,0.2)] transform scale-100">
+            
+            <!-- Dashboard Header -->
+            <div class="flex justify-between items-center p-4 border-b border-white/10 bg-black/60">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-server text-2xl text-cyan-400"></i>
+                    <div>
+                        <h2 class="text-xl orbitron font-bold text-white">OPERATOR DASHBOARD</h2>
+                        <p class="text-[10px] text-gray-400 tracking-widest">CLASSIFIED DATA ARCHIVE</p>
+                    </div>
+                </div>
+                <button onclick="uiManager.toggleDashboard()" class="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-black/80">
+                
+                <!-- Profile Section -->
+                <div class="mb-8">
+                    <h3 class="text-purple-400 font-bold mb-3 text-sm uppercase tracking-wider border-b border-purple-500/30 pb-1">Identity</h3>
+                    <div class="flex gap-4 items-end">
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-500 block mb-1">CODENAME</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="nickname-input" class="bg-gray-900 border border-gray-700 rounded px-3 py-2 text-cyan-300 font-mono w-full focus:border-cyan-500 outline-none uppercase" maxlength="12">
+                                <button onclick="gameLogic.updateName()" class="px-4 py-2 bg-cyan-900/50 border border-cyan-500/50 text-cyan-400 rounded hover:bg-cyan-900 text-xs font-bold">SAVE</button>
+                            </div>
+                        </div>
+                        <div class="flex-1 text-right">
+                             <label class="text-[10px] text-gray-500 block mb-1">RANK</label>
+                             <span class="text-2xl orbitron text-yellow-500" id="rank-display">NOVICE</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connectivity / Sharing -->
+                <div class="mb-8">
+                    <h3 class="text-green-400 font-bold mb-3 text-sm uppercase tracking-wider border-b border-green-500/30 pb-1">Network Uplink</h3>
+                    <div class="bg-green-900/10 border border-green-500/20 p-3 rounded flex justify-between items-center">
+                        <div>
+                            <div class="text-green-300 font-bold text-xs mb-1">SHARE TACTICAL DATA</div>
+                            <div class="text-[10px] text-gray-400">Generate a secure link to display your achievements.</div>
+                        </div>
+                        <button onclick="uiManager.generateShareLink()" id="share-btn" class="px-4 py-2 bg-green-900/30 border border-green-500 text-green-400 rounded hover:bg-green-800/50 text-xs font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-share-nodes"></i> COPY LINK
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <h3 class="text-cyan-400 font-bold mb-3 text-sm uppercase tracking-wider border-b border-cyan-500/30 pb-1">Performance Metrics</h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8">
+                    <div class="stat-card p-3 rounded">
+                        <div class="text-[10px] text-gray-400">TOTAL CLICKS</div>
+                        <div id="stat-clicks" class="text-lg font-bold text-white">0</div>
+                    </div>
+                    <div class="stat-card p-3 rounded">
+                        <div class="text-[10px] text-gray-400">TOTAL DAMAGE</div>
+                        <div id="stat-damage" class="text-lg font-bold text-white">0</div>
+                    </div>
+                    <div class="stat-card p-3 rounded">
+                        <div class="text-[10px] text-gray-400">BOSSES ELIMINATED</div>
+                        <div id="stat-bosses" class="text-lg font-bold text-white">0</div>
+                    </div>
+                    <div class="stat-card p-3 rounded">
+                        <div class="text-[10px] text-gray-400">HIGHEST DPS</div>
+                        <div id="stat-peak-dps" class="text-lg font-bold text-white">0</div>
+                    </div>
+                    <div class="stat-card p-3 rounded">
+                        <div class="text-[10px] text-gray-400">CRITICAL HITS</div>
+                        <div id="stat-crits" class="text-lg font-bold text-white">0</div>
+                    </div>
+                    <div class="stat-card p-3 rounded">
+                        <div class="text-[10px] text-gray-400">TIME ONLINE</div>
+                        <div id="stat-time" class="text-lg font-bold text-white">0m</div>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="mt-8 pt-6 border-t border-red-900/30">
+                    <h3 class="text-red-500 font-bold mb-2 text-sm uppercase">Danger Zone</h3>
+                    <div class="flex justify-between items-center bg-red-900/10 border border-red-900/30 p-3 rounded">
+                        <span class="text-xs text-red-300">Factory Reset (Deletes all progress)</span>
+                        <button onclick="gameLogic.resetGame()" class="bg-red-900/20 hover:bg-red-500 hover:text-white text-red-500 border border-red-500/50 px-3 py-1 rounded text-xs transition-colors">
+                            INITIATE WIPE
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- TRANSMISSION OVERLAY (SHARING) -->
+    <div id="transmission-overlay" class="fixed inset-0 z-[100] hidden-modal modal-overlay flex items-center justify-center p-4 bg-black/90">
+        <div class="transmission-card w-full max-w-md rounded-lg p-1 overflow-hidden relative transform scale-100">
+            <!-- Animated Scan Line -->
+            <div class="absolute top-0 left-0 right-0 h-1 bg-green-500 shadow-[0_0_20px_#0f0] animate-pulse"></div>
+            
+            <div class="p-6 bg-black/80 relative overflow-hidden">
+                <div class="absolute top-2 right-2 text-green-500 text-2xl opacity-50"><i class="fa-solid fa-satellite-dish"></i></div>
+                
+                <h2 class="text-2xl orbitron font-bold text-green-400 mb-1">INCOMING TRANSMISSION</h2>
+                <p class="text-xs text-green-600 font-mono tracking-widest mb-6 border-b border-green-900 pb-2">SOURCE: ENCRYPTED UPLINK</p>
+
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-16 h-16 border-2 border-green-500 rounded flex items-center justify-center bg-green-900/20 text-green-400 text-3xl">
+                        <i class="fa-solid fa-user-secret"></i>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-green-600 uppercase">OPERATOR IDENTITY</div>
+                        <div id="share-name" class="text-xl font-bold text-white orbitron tracking-widest">UNKNOWN</div>
+                        <div id="share-rank" class="text-sm text-yellow-400 font-bold">NOVICE</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="bg-green-900/20 border border-green-900 p-2 rounded">
+                        <div class="text-[9px] text-green-600 uppercase">SECTOR LEVEL</div>
+                        <div id="share-level" class="text-lg text-white font-mono">0</div>
+                    </div>
+                    <div class="bg-green-900/20 border border-green-900 p-2 rounded">
+                        <div class="text-[9px] text-green-600 uppercase">TOTAL DAMAGE</div>
+                        <div id="share-damage" class="text-lg text-white font-mono">0</div>
+                    </div>
+                </div>
+
+                <button onclick="window.location.href = window.location.pathname" class="w-full py-3 bg-green-600 hover:bg-green-500 text-black font-bold rounded orbitron tracking-widest transition-colors shadow-[0_0_15px_rgba(0,255,0,0.4)]">
+                    INITIATE YOUR TERMINAL
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CONFIG = {
+            saveKey: 'neon_core_v2_save',
+            autoSaveInterval: 30000,
+            critChance: 0.05,
+            critMultiplier: 2.5,
+            ranks: [
+                { n: 'NOVICE', v: 0 },
+                { n: 'HACKER', v: 1000 },
+                { n: 'CYPHER', v: 10000 },
+                { n: 'PHANTOM', v: 100000 },
+                { n: 'ARCHITECT', v: 1000000 },
+                { n: 'GOD MODE', v: 100000000 }
+            ]
+        };
+
+        const BASE_UPGRADES = [
+            { id: 'u1', name: "Neural Link", type: 'click', baseCost: 15, basePower: 1, count: 0, icon: "fa-fingerprint", desc: "+1 Click Dmg" },
+            { id: 'u2', name: "Basic Script", type: 'dps', baseCost: 50, basePower: 3, count: 0, icon: "fa-scroll", desc: "+3 DPS" },
+            { id: 'u3', name: "GPU Cluster", type: 'dps', baseCost: 300, basePower: 15, count: 0, icon: "fa-memory", desc: "+15 DPS" },
+            { id: 'u4', name: "Plasma Gloves", type: 'click', baseCost: 1000, basePower: 25, count: 0, icon: "fa-hand-sparkles", desc: "+25 Click Dmg" },
+            { id: 'u5', name: "AI Core", type: 'dps', baseCost: 3500, basePower: 85, count: 0, icon: "fa-brain", desc: "+85 DPS" },
+            { id: 'u6', name: "Quantum Net", type: 'dps', baseCost: 12000, basePower: 350, count: 0, icon: "fa-network-wired", desc: "+350 DPS" },
+            { id: 'u7', name: "Orbital Laser", type: 'dps', baseCost: 50000, basePower: 1500, count: 0, icon: "fa-satellite-dish", desc: "+1.5K DPS" },
+            { id: 'u8', name: "Dark Matter", type: 'click', baseCost: 250000, basePower: 5000, count: 0, icon: "fa-atom", desc: "+5K Click Dmg" },
+        ];
+
+        /** --- STATE MANAGEMENT --- */
+        class GameState {
+            constructor() {
+                this.player = { name: "OPERATOR", rank: "NOVICE" };
+                this.credits = 0;
+                this.clickDamage = 1;
+                this.dps = 0;
+                this.level = 1;
+                this.boss = { currentHp: 10, maxHp: 10, name: "CORE MK-I", color: 0x00f3ff };
+                this.upgrades = JSON.parse(JSON.stringify(BASE_UPGRADES));
+                this.stats = {
+                    totalClicks: 0,
+                    totalDamage: 0,
+                    bossesKilled: 0,
+                    crits: 0,
+                    startTime: Date.now(),
+                    highestDps: 0
+                };
+                this.skills = {
+                    overclock: { active: false, cooldown: 0, duration: 15000, cdTime: 60000 },
+                    nanoswarm: { active: false, cooldown: 0, duration: 5000, cdTime: 30000 }
+                };
+            }
+        }
+
+        /** --- GAME ENGINE --- */
+        class GameLogic {
+            constructor(ui, renderer) {
+                this.ui = ui;
+                this.renderer = renderer;
+                this.state = new GameState();
+                this.lastTick = performance.now();
+                this.autoSaveTimer = 0;
+
+                this.loadGame();
+                this.calculateStats();
+                this.ui.init(this); // Bind UI to logic
+                
+                this.renderer.setBoss(this.state.level);
+                this.startLoop();
+            }
+
+            calculateStats() {
+                let dps = 0;
+                let click = 1;
+                this.state.upgrades.forEach(u => {
+                    if (u.type === 'dps') dps += u.basePower * u.count;
+                    if (u.type === 'click') click += u.basePower * u.count;
+                });
+
+                if (this.state.skills.overclock.active) dps *= 2;
+
+                this.state.dps = dps;
+                this.state.clickDamage = click;
+
+                if(dps > this.state.stats.highestDps) this.state.stats.highestDps = dps;
+            }
+
+            clickBoss(x, y, isAuto = false) {
+                let dmg = this.state.clickDamage;
+                let isCrit = false;
+
+                if (!isAuto) {
+                    this.state.stats.totalClicks++;
+                    if (Math.random() < CONFIG.critChance) {
+                        dmg *= CONFIG.critMultiplier;
+                        isCrit = true;
+                        this.state.stats.crits++;
+                    }
+                }
+                
+                dmg = Math.floor(dmg);
+                this.dealDamage(dmg, x, y, isCrit, isAuto);
+            }
+
+            dealDamage(amount, x, y, isCrit, isAuto) {
+                this.state.boss.currentHp -= amount;
+                this.state.stats.totalDamage += amount;
+
+                // Floating Text
+                if (!isAuto || Math.random() > 0.7) { 
+                    const driftX = (Math.random() - 0.5) * 50;
+                    const driftY = (Math.random() - 0.5) * 50;
+                    const color = isCrit ? 'gold' : 'cyan';
+                    const text = isCrit ? `CRIT ${amount}!` : amount;
+                    
+                    // If auto click (center screen), else mouse coords
+                    const fx = x || (window.innerWidth/2);
+                    const fy = y || (window.innerHeight/3);
+                    
+                    this.ui.showFloatingText(fx + driftX, fy + driftY, text, color, isCrit);
+                    this.renderer.triggerClickEffect(isCrit);
+                    if (isCrit) this.renderer.spawnParticles(20, 0xffd700, 1.5);
+                    else this.renderer.spawnParticles(8, this.state.boss.color, 1);
+                }
+
+                if (this.state.boss.currentHp <= 0) {
+                    this.levelUp();
+                }
+                this.ui.updateBossHealth(this.state.boss);
+            }
+
+            levelUp() {
+                this.state.stats.bossesKilled++;
+                const reward = Math.ceil(this.state.boss.maxHp * 0.15);
+                this.addCredits(reward);
+                
+                this.ui.showFloatingText(window.innerWidth/2, window.innerHeight/3, `+${reward} CR`, 'purple', true);
+
+                this.state.level++;
+                this.state.boss.maxHp = Math.ceil(this.state.boss.maxHp * 1.4);
+                this.state.boss.currentHp = this.state.boss.maxHp;
+                this.generateBossName();
+
+                this.renderer.changeBossModel(this.state.level);
+                this.state.boss.color = this.renderer.primaryColor;
+                
+                this.ui.updateStats(this.state);
+                this.ui.updateBossHealth(this.state.boss);
+                
+                // Auto save on level up for safety
+                this.saveGame();
+            }
+
+            generateBossName() {
+                const prefixes = ["CORE", "HOLO", "MECH", "XEN", "VOID", "CYBER", "NANO"];
+                const suffixes = ["PRIME", "OMEGA", "X", "V2", "GUARDIAN", "SENTINEL"];
+                const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+                const s = suffixes[Math.floor(Math.random() * suffixes.length)];
+                this.state.boss.name = `${p} ${s}-${this.state.level}`;
+            }
+
+            addCredits(amount) {
+                this.state.credits += amount;
+                this.updateRank();
+                this.ui.updateStats(this.state);
+            }
+
+            updateRank() {
+                for(let i = CONFIG.ranks.length - 1; i >= 0; i--) {
+                    if(this.state.stats.totalDamage >= CONFIG.ranks[i].v) {
+                        this.state.player.rank = CONFIG.ranks[i].n;
+                        break;
+                    }
+                }
+            }
+
+            updateName() {
+                const input = document.getElementById('nickname-input');
+                if(input.value.trim().length > 0) {
+                    this.state.player.name = input.value.trim().toUpperCase();
+                    this.ui.updateStats(this.state);
+                    this.saveGame();
+                    alert("CODENAME UPDATED");
+                }
+            }
+
+            purchaseUpgrade(id) {
+                const u = this.state.upgrades.find(x => x.id === id);
+                if (!u) return;
+                const cost = Math.floor(u.baseCost * Math.pow(1.15, u.count));
+                if (this.state.credits >= cost) {
+                    this.state.credits -= cost;
+                    u.count++;
+                    this.calculateStats();
+                    this.ui.updateStats(this.state);
+                    this.ui.renderUpgrades(this.state.upgrades);
+                }
+            }
+
+            activateSkill(name) {
+                const s = this.state.skills[name];
+                if (s.active || s.cooldown > 0) return;
+                s.active = true;
+                s.cooldown = s.cdTime;
+                this.calculateStats();
+                this.ui.updateStats(this.state);
+                setTimeout(() => {
+                    s.active = false;
+                    this.calculateStats();
+                    this.ui.updateStats(this.state);
+                }, s.duration);
+            }
+
+            startLoop() {
+                const loop = (currentTime) => {
+                    const delta = currentTime - this.lastTick;
+                    this.lastTick = currentTime;
+
+                    // DPS
+                    if (this.state.dps > 0) {
+                        const dmg = this.state.dps * (delta / 1000);
+                        this.state.boss.currentHp -= dmg;
+                        this.state.stats.totalDamage += dmg;
+                        if (this.state.boss.currentHp <= 0) this.levelUp();
+                        else this.ui.updateBossHealth(this.state.boss);
+                    }
+
+                    // NanoSwarm Skill
+                    if (this.state.skills.nanoswarm.active) {
+                        if (Math.random() < (15 * delta / 1000)) {
+                            this.clickBoss(window.innerWidth/2, window.innerHeight/3, true);
+                        }
+                    }
+
+                    // Cooldowns
+                    for (const key in this.state.skills) {
+                        const s = this.state.skills[key];
+                        if (s.cooldown > 0) {
+                            s.cooldown -= delta;
+                            if (s.cooldown < 0) s.cooldown = 0;
+                            this.ui.updateSkillCooldown(key, s.cooldown, s.cdTime);
+                        }
+                    }
+
+                    // Auto Save
+                    this.autoSaveTimer += delta;
+                    if (this.autoSaveTimer > CONFIG.autoSaveInterval) {
+                        this.saveGame();
+                        this.autoSaveTimer = 0;
+                    }
+
+                    requestAnimationFrame(loop);
+                };
+                requestAnimationFrame(loop);
+            }
+
+            saveGame() {
+                const data = JSON.stringify(this.state);
+                localStorage.setItem(CONFIG.saveKey, data);
+                this.ui.showSaveIndicator();
+            }
+
+            loadGame() {
+                const saved = localStorage.getItem(CONFIG.saveKey);
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        // Deep merge roughly
+                        if(data.credits) this.state.credits = data.credits;
+                        if(data.level) this.state.level = data.level;
+                        if(data.boss) this.state.boss = data.boss;
+                        if(data.player) this.state.player = data.player;
+                        
+                        // Merge stats
+                        if(data.stats) {
+                            this.state.stats = { ...this.state.stats, ...data.stats };
+                        }
+                        
+                        // Merge Upgrades (preserve structure, update counts)
+                        if (data.upgrades) {
+                            data.upgrades.forEach(savedU => {
+                                const localU = this.state.upgrades.find(u => u.id === savedU.id);
+                                if (localU) localU.count = savedU.count;
+                            });
+                        }
+                    } catch (e) { console.error("Save load error", e); }
+                }
+            }
+
+            resetGame() {
+                if(confirm("WARNING: COMPLETE SYSTEM WIPE. CANNOT BE UNDONE.")) {
+                    localStorage.removeItem(CONFIG.saveKey);
+                    location.reload();
+                }
+            }
+        }
+
+        /** --- UI MANAGER --- */
+        class UIManager {
+            constructor() {
+                this.els = {
+                    credits: document.getElementById('credits-display'),
+                    dps: document.getElementById('dps-display'),
+                    click: document.getElementById('click-display'),
+                    name: document.getElementById('player-name'),
+                    bossName: document.getElementById('boss-name'),
+                    bossHp: document.getElementById('boss-hp-text'),
+                    hpBar: document.getElementById('hp-bar'),
+                    lvlBadge: document.getElementById('level-badge'),
+                    list: document.getElementById('upgrade-list'),
+                    dashboard: document.getElementById('dashboard-overlay'),
+                    nickInput: document.getElementById('nickname-input'),
+                    rank: document.getElementById('rank-display'),
+                    shareBtn: document.getElementById('share-btn'),
+                    stats: {
+                        clicks: document.getElementById('stat-clicks'),
+                        dmg: document.getElementById('stat-damage'),
+                        bosses: document.getElementById('stat-bosses'),
+                        dps: document.getElementById('stat-peak-dps'),
+                        crits: document.getElementById('stat-crits'),
+                        time: document.getElementById('stat-time')
+                    }
+                };
+                this.logic = null;
+            }
+
+            init(logic) {
+                this.logic = logic;
+                this.renderUpgrades(logic.state.upgrades);
+                this.updateStats(logic.state);
+                this.updateBossHealth(logic.state.boss);
+                
+                // Set initial nickname input
+                this.els.nickInput.value = logic.state.player.name;
+            }
+
+            updateStats(state) {
+                this.els.credits.innerText = Math.floor(state.credits).toLocaleString();
+                this.els.dps.innerText = state.dps.toFixed(1);
+                this.els.click.innerText = Math.floor(state.clickDamage).toLocaleString();
+                this.els.name.innerText = state.player.name;
+                this.els.lvlBadge.innerText = state.level;
+                this.els.bossName.innerText = state.boss.name;
+                
+                // Update buttons state
+                const buttons = this.els.list.querySelectorAll('.upgrade-btn');
+                state.upgrades.forEach((u, i) => {
+                    if (buttons[i]) {
+                        const cost = Math.floor(u.baseCost * Math.pow(1.15, u.count));
+                        buttons[i].disabled = state.credits < cost;
+                        buttons[i].innerHTML = `<span class="text-[10px] mr-1">CR</span> ${cost.toLocaleString()}`;
+                    }
+                });
+            }
+
+            updateBossHealth(boss) {
+                const pct = Math.max(0, (boss.currentHp / boss.maxHp) * 100);
+                this.els.hpBar.style.width = `${pct}%`;
+                this.els.bossHp.innerText = `${Math.ceil(Math.max(0, boss.currentHp))} / ${Math.ceil(boss.maxHp)}`;
+            }
+
+            toggleDashboard() {
+                const d = this.els.dashboard;
+                const isOpen = d.classList.contains('visible-modal');
+                
+                if(isOpen) {
+                    d.classList.remove('visible-modal');
+                    d.classList.add('hidden-modal');
+                } else {
+                    this.updateDashboardStats();
+                    d.classList.remove('hidden-modal');
+                    d.classList.add('visible-modal');
+                }
+            }
+            
+            editNickname() {
+                this.toggleDashboard();
+                setTimeout(() => this.els.nickInput.focus(), 100);
+            }
+
+            updateDashboardStats() {
+                const s = this.logic.state.stats;
+                this.els.stats.clicks.innerText = s.totalClicks.toLocaleString();
+                this.els.stats.dmg.innerText = Math.floor(s.totalDamage).toLocaleString();
+                this.els.stats.bosses.innerText = s.bossesKilled.toLocaleString();
+                this.els.stats.dps.innerText = Math.floor(s.highestDps).toLocaleString();
+                this.els.stats.crits.innerText = s.crits.toLocaleString();
+                
+                const mins = Math.floor((Date.now() - s.startTime) / 60000);
+                this.els.stats.time.innerText = `${mins}m`;
+                
+                this.logic.updateRank();
+                this.els.rank.innerText = this.logic.state.player.rank;
+            }
+
+            updateSkillCooldown(key, current, max) {
+                const pct = (current / max) * 100;
+                const el = document.getElementById(key === 'overclock' ? 'cd-1' : 'cd-2');
+                const btn = document.getElementById(key === 'overclock' ? 'skill-1' : 'skill-2');
+                if(el) el.style.height = `${pct}%`;
+                if(btn) btn.disabled = current > 0;
+            }
+
+            renderUpgrades(upgrades) {
+                this.els.list.innerHTML = '';
+                upgrades.forEach(u => {
+                    const cost = Math.floor(u.baseCost * Math.pow(1.15, u.count));
+                    const el = document.createElement('div');
+                    el.className = 'p-2 rounded border border-white/5 bg-white/5 flex justify-between items-center';
+                    el.innerHTML = `
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-8 h-8 rounded bg-black/40 flex items-center justify-center text-cyan-500 border border-cyan-900">
+                                <i class="fa-solid ${u.icon}"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="font-bold text-cyan-100 text-xs orbitron truncate">${u.name}</div>
+                                <div class="text-[9px] text-gray-400">${u.desc} <span class="text-cyan-500 ml-1">Lvl ${u.count}</span></div>
+                            </div>
+                        </div>
+                        <button class="upgrade-btn skill-btn px-2 py-1.5 rounded text-xs font-bold text-white border-cyan-500/30 min-w-[70px] text-right"
+                            onclick="gameLogic.purchaseUpgrade('${u.id}')">
+                            ${cost.toLocaleString()}
+                        </button>
+                    `;
+                    this.els.list.appendChild(el);
+                });
+            }
+
+            showFloatingText(x, y, text, color, isCrit) {
+                const el = document.createElement('div');
+                el.className = 'floating-text orbitron';
+                if(isCrit) {
+                    el.style.fontSize = '24px';
+                    el.style.color = '#ffd700';
+                    el.style.zIndex = '101';
+                } else {
+                    el.style.fontSize = '16px';
+                    el.style.color = color === 'purple' ? '#bc13fe' : '#00f3ff';
+                }
+                el.innerText = text;
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 800);
+            }
+
+            showSaveIndicator() {
+                const el = document.getElementById('save-indicator');
+                el.style.opacity = 1;
+                setTimeout(() => el.style.opacity = 0, 2000);
+            }
+
+            // Sharing Logic
+            generateShareLink() {
+                const s = this.logic.state;
+                const shareData = {
+                    n: s.player.name,
+                    r: s.player.rank,
+                    l: s.level,
+                    d: Math.floor(s.stats.totalDamage)
+                };
+
+                try {
+                    const jsonStr = JSON.stringify(shareData);
+                    const encoded = btoa(jsonStr);
+                    const url = `${window.location.origin}${window.location.pathname}?transmission=${encoded}`;
+                    
+                    navigator.clipboard.writeText(url).then(() => {
+                        const btn = this.els.shareBtn;
+                        const originalText = btn.innerHTML;
+                        btn.innerHTML = `<i class="fa-solid fa-check"></i> LINK COPIED`;
+                        btn.classList.add('bg-green-500/50');
+                        setTimeout(() => {
+                            btn.innerHTML = originalText;
+                            btn.classList.remove('bg-green-500/50');
+                        }, 2000);
+                    });
+                } catch(e) {
+                    console.error("Share generation failed", e);
+                    alert("Encryption Error");
+                }
+            }
+
+            checkIncomingTransmission() {
+                const params = new URLSearchParams(window.location.search);
+                const data = params.get('transmission');
+                if(data) {
+                    try {
+                        const decoded = atob(data);
+                        const stats = JSON.parse(decoded);
+                        
+                        // Fill UI
+                        document.getElementById('share-name').innerText = stats.n || "UNKNOWN";
+                        document.getElementById('share-rank').innerText = stats.r || "NOVICE";
+                        document.getElementById('share-level').innerText = stats.l || "1";
+                        document.getElementById('share-damage').innerText = (stats.d || 0).toLocaleString();
+
+                        // Show Overlay
+                        const overlay = document.getElementById('transmission-overlay');
+                        overlay.classList.remove('hidden-modal');
+                        overlay.classList.add('visible-modal');
+                        
+                        return true; // Signal that we are in share view mode
+                    } catch(e) {
+                        console.error("Transmission decode failed", e);
+                    }
+                }
+                return false;
+            }
+        }
+
+        /** --- RENDER ENGINE (THREE.JS) --- */
+        class RenderEngine {
+            constructor(containerId) {
+                this.container = document.getElementById(containerId);
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.FogExp2(0x050510, 0.04);
+
+                this.camera = new THREE.PerspectiveCamera(60, this.container.clientWidth / this.container.clientHeight, 0.1, 1000);
+                this.camera.position.set(0, 1, 6);
+                this.camera.lookAt(0, 0, 0);
+
+                this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.container.appendChild(this.renderer.domElement);
+
+                const ambient = new THREE.AmbientLight(0x404040, 2);
+                this.scene.add(ambient);
+                this.pointLight = new THREE.PointLight(0x00f3ff, 2, 20);
+                this.pointLight.position.set(4, 4, 6);
+                this.scene.add(this.pointLight);
+
+                this.bossGroup = new THREE.Group();
+                this.scene.add(this.bossGroup);
+                this.particleGroup = new THREE.Group();
+                this.scene.add(this.particleGroup);
+
+                this.createEnvironment();
+                window.addEventListener('resize', () => this.onResize());
+                this.animate();
+            }
+
+            createEnvironment() {
+                // Grid Floor
+                const grid = new THREE.GridHelper(50, 50, 0x333333, 0x111111);
+                grid.position.y = -3;
+                this.grid = grid;
+                this.scene.add(grid);
+                
+                // Stars
+                const starGeo = new THREE.BufferGeometry();
+                const starCount = 500;
+                const pos = new Float32Array(starCount * 3);
+                for(let i=0; i<starCount*3; i++) {
+                    pos[i] = (Math.random() - 0.5) * 80;
+                }
+                starGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.05, transparent: true, opacity: 0.5});
+                this.scene.add(new THREE.Points(starGeo, starMat));
+            }
+
+            changeBossModel(level) {
+                while(this.bossGroup.children.length > 0){ 
+                    const obj = this.bossGroup.children[0];
+                    if(obj.geometry) obj.geometry.dispose();
+                    if(obj.material) obj.material.dispose();
+                    this.bossGroup.remove(obj); 
+                }
+
+                const shapes = ['icosa', 'octa', 'dodec', 'torus', 'box'];
+                const colors = [0x00f3ff, 0xbc13fe, 0xff0055, 0x0aff0a];
+                
+                const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                this.primaryColor = colors[Math.floor(Math.random() * colors.length)];
+                this.pointLight.color.setHex(this.primaryColor);
+
+                let geo;
+                switch(shape) {
+                    case 'icosa': geo = new THREE.IcosahedronGeometry(1.5, 0); break;
+                    case 'octa': geo = new THREE.OctahedronGeometry(1.6, 0); break;
+                    case 'dodec': geo = new THREE.DodecahedronGeometry(1.5, 0); break;
+                    case 'torus': geo = new THREE.TorusKnotGeometry(1, 0.3, 100, 16); break;
+                    case 'box': geo = new THREE.BoxGeometry(2, 2, 2); break;
+                }
+
+                // Core
+                const mat = new THREE.MeshStandardMaterial({
+                    color: 0x111111, roughness: 0.2, metalness: 0.8,
+                    emissive: this.primaryColor, emissiveIntensity: 0.6, flatShading: true
+                });
+                this.core = new THREE.Mesh(geo, mat);
+                this.bossGroup.add(this.core);
+
+                // Shell
+                const shell = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+                    color: this.primaryColor, wireframe: true, transparent: true, opacity: 0.15
+                }));
+                shell.scale.set(1.2, 1.2, 1.2);
+                this.bossGroup.add(shell);
+
+                // Orbitals
+                const orbitCount = Math.floor(Math.random() * 3) + 1;
+                for(let i=0; i<orbitCount; i++) {
+                   const ring = new THREE.Mesh(
+                       new THREE.TorusGeometry(2.5 + i*0.5, 0.02, 3, 32),
+                       new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 })
+                   );
+                   ring.rotation.set(Math.random()*3, Math.random()*3, 0);
+                   ring.userData = { speed: (Math.random()-0.5)*0.05, axis: new THREE.Vector3(Math.random(), Math.random(), 0) };
+                   this.bossGroup.add(ring);
+                }
+            }
+
+            setBoss(level) { this.changeBossModel(level); }
+
+            triggerClickEffect(isCrit) {
+                const scale = isCrit ? 0.6 : 0.85;
+                this.bossGroup.scale.set(scale, scale, scale);
+                if(this.core) {
+                    this.core.material.emissiveIntensity = 3.0;
+                    setTimeout(() => this.core.material.emissiveIntensity = 0.6, 100);
+                }
+            }
+
+            spawnParticles(count, color, speed) {
+                const geo = new THREE.BufferGeometry();
+                const pos = [];
+                const vels = [];
+                for(let i=0; i<count; i++) {
+                    pos.push(0,0,0);
+                    const v = new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize().multiplyScalar((0.1 + Math.random()*0.2) * speed);
+                    vels.push(v.x, v.y, v.z);
+                }
+                geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+                const p = new THREE.Points(geo, new THREE.PointsMaterial({ color: color, size: 0.15, transparent: true }));
+                p.userData = { vels: vels, age: 0 };
+                this.particleGroup.add(p);
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                // Idle
+                this.bossGroup.rotation.y += 0.005;
+                this.bossGroup.scale.lerp(new THREE.Vector3(1,1,1), 0.1);
+                
+                // Orbitals
+                this.bossGroup.children.forEach(c => {
+                    if(c.userData.speed) c.rotation.x += c.userData.speed;
+                });
+
+                // Particles
+                for(let i=this.particleGroup.children.length-1; i>=0; i--){
+                    const p = this.particleGroup.children[i];
+                    p.userData.age += 0.02;
+                    const pos = p.geometry.attributes.position.array;
+                    const vels = p.userData.vels;
+                    for(let j=0; j<pos.length/3; j++) {
+                        pos[j*3] += vels[j*3];
+                        pos[j*3+1] += vels[j*3+1];
+                        pos[j*3+2] += vels[j*3+2];
+                    }
+                    p.geometry.attributes.position.needsUpdate = true;
+                    p.material.opacity = 1 - p.userData.age;
+                    if(p.userData.age >= 1) {
+                        this.particleGroup.remove(p);
+                        p.geometry.dispose(); p.material.dispose();
+                    }
+                }
+
+                // Grid scroll
+                if(this.grid) {
+                    this.grid.position.z = (Date.now() * 0.002) % 2;
+                }
+
+                this.renderer.render(this.scene, this.camera);
+            }
+
+            onResize() {
+                const w = this.container.clientWidth;
+                const h = this.container.clientHeight;
+                this.renderer.setSize(w, h);
+                this.camera.aspect = w / h;
+                this.camera.updateProjectionMatrix();
+            }
+        }
+
+        // INIT
+        window.onload = () => {
+            const ui = new UIManager();
+            const rend = new RenderEngine('scene-container');
+            
+            // Check for shared link
+            ui.checkIncomingTransmission();
+
+            window.gameLogic = new GameLogic(ui, rend);
+            window.uiManager = ui; // Global for HTML handlers
+
+            const layer = document.getElementById('click-layer');
+            layer.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                if(e.isPrimary === false) return;
+                gameLogic.clickBoss(e.clientX, e.clientY);
+            });
+        };
+    </script>
+</body>
+</html>

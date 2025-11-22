@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- SEO META TAGS -->
+    <title>GEOMETRY CLICKER: The Ultimate Cyberpunk Idle Clicker RPG</title>
+    <meta name="description" content="Dive into the cybernetic void. Battle procedural 3D bosses, upgrade your neural systems, and compete for the highest operator rank in this immersive browser-based idle RPG.">
+    <meta name="keywords" content="cyberpunk game, idle clicker, 3D browser game, rpg, neon style, webgl game, free to play">
+    <meta name="author" content="GEOMETRY CLICKER Systems">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://neoncore.game/">
+    <meta property="og:title" content="GEOMETRY CLICKER: Cyberpunk Clicker">
+    <meta property="og:description" content="Hack the system. Destroy the core. Become the ultimate operator in this 3D idle clicker.">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1555680202-c86f0e12f086?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="GEOMETRY CLICKER: Cyberpunk Clicker">
+    <meta property="twitter:description" content="Battle procedural 3D bosses and upgrade your systems in this next-gen web game.">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #bc13fe;
+            --bg-dark: #050510;
+            --glass-bg: rgba(10, 20, 40, 0.8);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .font-mono { font-family: 'Share Tech Mono', monospace; }
+
+        /* Neon Glows */
+        .text-glow { text-shadow: 0 0 10px rgba(0, 243, 255, 0.7); }
+        .box-glow { box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); }
+        
+        .hero-gradient {
+            background: radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.15) 0%, rgba(5, 5, 16, 0) 70%);
+        }
+
+        .grid-bg {
+            background-image: linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            opacity: 0.2;
+        }
+
+        .feature-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s, border-color 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--neon-blue);
+        }
+
+        .cta-btn {
+            background: linear-gradient(90deg, #00f3ff, #00a8ff);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+            transition: all 0.3s;
+        }
+        .cta-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(0, 243, 255, 0.8);
+        }
+
+        .scanline {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="relative">
+
+    <div class="fixed inset-0 scanline z-50 pointer-events-none opacity-20"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-40 backdrop-blur-md border-b border-white/10 bg-black/60">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-cube text-3xl text-cyan-400 animate-pulse"></i>
+                <span class="font-orbitron font-bold text-2xl tracking-widest text-white">GEOMETRY <span class="text-cyan-400">CLICKER</span></span>
+            </div>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="game.html" class="px-6 py-2 border border-cyan-500 text-cyan-400 rounded hover:bg-cyan-500/10 transition-all font-bold font-mono">PLAY</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
+        <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
+             <div class="w-[200%] h-[200%] grid-bg absolute bottom-[-50%]"></div>
+             <div class="hero-gradient absolute inset-0"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-6 relative z-10 text-center">
+            <div class="inline-block px-3 py-1 border border-purple-500/50 rounded-full bg-purple-900/20 text-purple-300 text-xs font-mono mb-6 tracking-widest animate-bounce">
+                SYSTEM UPDATE V2.0 LIVE
+            </div>
+            <h1 class="text-5xl md:text-7xl font-orbitron font-black mb-6 leading-tight">
+                HACK THE <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 text-glow">MAINFRAME</span>
+            </h1>
+            <p class="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 font-mono">
+                Engage in the ultimate browser-based idle experience. Destroy procedural 3D cores, upgrade your cybernetic enhancements, and climb the operator rankings.
+            </p>
+            
+            <div class="flex flex-col md:flex-row items-center justify-center gap-4">
+                <a href="game.html" class="cta-btn text-black font-bold font-orbitron text-lg px-10 py-4 rounded uppercase tracking-widest w-full md:w-auto">
+                    PLAY NOW <i class="fa-solid fa-play ml-2"></i>
+                </a>
+                <a href="#features" class="px-10 py-4 border border-white/20 rounded hover:bg-white/5 transition-colors font-mono text-gray-300 w-full md:w-auto">
+                    SYSTEM SPECS
+                </a>
+            </div>
+
+            <!-- Stat Counters (Fake for Social Proof) -->
+            <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 border-t border-white/10 pt-8 max-w-4xl mx-auto">
+                <div>
+                    <div class="text-3xl font-bold font-orbitron text-cyan-400">500K+</div>
+                    <div class="text-xs text-gray-500 font-mono mt-1">CORES DESTROYED</div>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold font-orbitron text-purple-400">12K+</div>
+                    <div class="text-xs text-gray-500 font-mono mt-1">ACTIVE OPERATORS</div>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold font-orbitron text-green-400">99.9%</div>
+                    <div class="text-xs text-gray-500 font-mono mt-1">UPTIME</div>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold font-orbitron text-yellow-400">V2.0</div>
+                    <div class="text-xs text-gray-500 font-mono mt-1">CURRENT PATCH</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section id="features" class="py-20 bg-black/50 border-y border-white/5">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-orbitron font-bold mb-4">SYSTEM CAPABILITIES</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto font-mono">Advanced neural interface features for maximum efficiency.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card p-8 rounded-xl group">
+                    <div class="w-14 h-14 bg-cyan-900/30 rounded-lg flex items-center justify-center border border-cyan-500/30 mb-6 group-hover:border-cyan-400 transition-colors">
+                        <i class="fa-solid fa-cube text-2xl text-cyan-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold font-orbitron mb-3 group-hover:text-cyan-300 transition-colors">Procedural 3D Targets</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Every boss is generated in real-time using WebGL. No two encounters are the same. Experience dynamic lighting and particle physics directly in your browser.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-card p-8 rounded-xl group">
+                    <div class="w-14 h-14 bg-purple-900/30 rounded-lg flex items-center justify-center border border-purple-500/30 mb-6 group-hover:border-purple-400 transition-colors">
+                        <i class="fa-solid fa-network-wired text-2xl text-purple-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold font-orbitron mb-3 group-hover:text-purple-300 transition-colors">Infinite Scaling</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        There is no level cap. Upgrade your DPS and Click Damage to astronomical numbers. Unlock ranks from Novice to God Mode as you progress.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-card p-8 rounded-xl group">
+                    <div class="w-14 h-14 bg-green-900/30 rounded-lg flex items-center justify-center border border-green-500/30 mb-6 group-hover:border-green-400 transition-colors">
+                        <i class="fa-solid fa-floppy-disk text-2xl text-green-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold font-orbitron mb-3 group-hover:text-green-300 transition-colors">Persistent Data</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Your progress is saved locally automatically. Share your stats with friends via encrypted uplink URLs to show off your dominance.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gameplay Preview -->
+    <section class="py-20 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center gap-12">
+            <div class="flex-1">
+                <h2 class="text-3xl md:text-4xl font-orbitron font-bold mb-6">NEXT GEN <span class="text-cyan-400">INTERFACE</span></h2>
+                <ul class="space-y-4 mb-8">
+                    <li class="flex items-center gap-3 text-gray-300 font-mono">
+                        <i class="fa-solid fa-check text-green-400"></i> Glassmorphism UI Design
+                    </li>
+                    <li class="flex items-center gap-3 text-gray-300 font-mono">
+                        <i class="fa-solid fa-check text-green-400"></i> Real-time Stat Tracking
+                    </li>
+                    <li class="flex items-center gap-3 text-gray-300 font-mono">
+                        <i class="fa-solid fa-check text-green-400"></i> Mobile Optimized App-like Experience
+                    </li>
+                    <li class="flex items-center gap-3 text-gray-300 font-mono">
+                        <i class="fa-solid fa-check text-green-400"></i> Instant Load Times (No Assets)
+                    </li>
+                </ul>
+                <a href="game.html" class="inline-flex items-center gap-2 text-cyan-400 font-bold hover:text-white transition-colors">
+                    ENTER SIMULATION <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="flex-1 relative group cursor-pointer" onclick="window.location.href='game.html'">
+                <div class="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-purple-600 rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                <div style="background: url('/image.png'); background-position: center; background-size: cover; background-repeat: no-repeat;" class="relative bg-gray-900 rounded-lg border border-gray-700 overflow-hidden aspect-video flex items-center justify-center group-hover:scale-[1.02] transition-transform">
+                    <!-- Mockup Content -->
+                    <div class="text-center">
+                        <i class="fa-solid fa-gamepad text-6xl text-gray-100 mb-4 group-hover:text-cyan-400 transition-colors"></i>
+                        <div class="text-gray-100 font-mono text-sm">CLICK TO START</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Footer -->
+    <footer class="border-t border-white/10 bg-black pt-20 pb-10">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h2 class="text-3xl font-orbitron font-bold mb-6 text-white">READY TO START?</h2>
+            <p class="text-gray-400 mb-8 font-mono">The system is waiting for your input. Begin your journey now.</p>
+            <a href="game.html" class="cta-btn inline-block px-12 py-4 rounded font-bold text-black font-orbitron text-xl uppercase tracking-widest">
+                PLAY NOW
+            </a>
+            
+            <div class="mt-16 flex justify-center gap-8 text-gray-600">
+                <i class="fa-brands fa-github text-2xl hover:text-white cursor-pointer"></i>
+                <i class="fa-brands fa-discord text-2xl hover:text-white cursor-pointer"></i>
+                <i class="fa-brands fa-twitter text-2xl hover:text-white cursor-pointer"></i>
+            </div>
+            <div class="mt-8 text-xs text-gray-700 font-mono">
+                &copy; 2023 GEOMETRY CLICKER SYSTEMS. ALL RIGHTS RESERVED.
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
